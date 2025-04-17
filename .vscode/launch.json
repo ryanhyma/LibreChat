@@ -2,16 +2,35 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Debug LibreChat API",
       "type": "node",
       "request": "launch",
-      "name": "Launch LibreChat (debug)",
-      "skipFiles": ["<node_internals>/**"],
       "program": "${workspaceFolder}/api/server/index.js",
+      "port": 49152,
+      "skipFiles": [
+        "<node_internals>/**",
+        "${workspaceFolder}/node_modules/**"
+      ],
       "env": {
-        "NODE_ENV": "production"
+        "NODE_ENV": "development"
       },
-      "console": "integratedTerminal",
-      "envFile": "${workspaceFolder}/.env"
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"]
+    },
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "Debug LibreChat Frontend",
+      "url": "http://localhost:3090",
+      "webRoot": "${workspaceFolder}/client",
+      "sourceMapPathOverrides": {
+        "webpack:///src/*": "${webRoot}/src/*"
+      }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug Full Stack",
+      "configurations": ["Debug LibreChat API", "Debug LibreChat Frontend"]
     }
   ]
 }

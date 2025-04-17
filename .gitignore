@@ -90,9 +90,7 @@ junit.xml
 **/.venv/
 **/venv/
 
-# docker override file
-docker-compose.override.yaml
-docker-compose.override.yml
+
 
 # meilisearch
 meilisearch
@@ -111,3 +109,11 @@ uploads/
 # owner
 release/
 !/client/src/@types/i18next.d.ts
+
+.env
+.env.*
+*.env
+*.env.*
+test.ps1
+test.py
+test_embedding.py

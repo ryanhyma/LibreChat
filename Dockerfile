@@ -3,7 +3,7 @@
 # Base node image
 FROM node:20-alpine AS node
 
-RUN apk --no-cache add curl
+RUN apk --no-cache add curl ca-certificates
 
 RUN mkdir -p /app && chown node:node /app
 WORKDIR /app
