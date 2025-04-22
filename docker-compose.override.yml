@@ -23,8 +23,7 @@ services:
       - type: bind
         source: /data/LibreChat/logs
         target: /app/api/logs
-    #  - /data/LibreChat/certs/azure-chain.crt:/usr/local/share/ca-certificates/azure-chain.crt
-    #command: sh -c "cat /usr/local/share/ca-certificates/*.crt >> /etc/ssl/certs/ca-certificates.crt && /usr/local/bin/npm run backend"
+    
   rag_api:
     build:
       context: ../rag_api
