@@ -9,10 +9,10 @@ services:
       - MONGO_URI=${MONGO_URI}
     volumes:
       - type: bind
-        source: /data/LibreChat/librechat.yaml
+        source: ./librechat.yaml
         target: /app/librechat.yaml
       - type: bind
-        source: /data/LibreChat/.env
+        source: .env
         target: /app/.env
       - type: bind
         source: /data/LibreChat/images
@@ -29,10 +29,8 @@ services:
     build:
       context: ../rag_api
       dockerfile: Dockerfile
-    user: "2001:2001"
-    #volumes:
-    #  - /data/LibreChat/certs/azure-chain.crt:/usr/local/share/ca-certificates/azure-chain.crt
-    #command: sh -c "cat /usr/local/share/ca-certificates/*.crt >> /etc/ssl/certs/ca-certificates.crt && /usr/local/bin/python main.py"
+    
+    
   mongodb:
     user: "2001:2001"
     ports:
@@ -44,9 +42,15 @@ services:
     volumes:
       - /data/LibreChat/meili_data_v1.12:/meili_data
   vectordb:
-    user: "2001:2001"
     volumes:
-      - /data/LibreChat/pgdata2:/var/lib/postgresql/data
+    - pgdata2:/var/lib/postgresql/data
+volumes:
+  pgdata2:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/LibreChat/pgdata2
 # ---------------------------------------------------
 
 # services:
