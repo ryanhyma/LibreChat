@@ -27,7 +27,7 @@ services:
   rag_api:
     build:
       context: ../rag_api
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.lite
     
     
   mongodb:
