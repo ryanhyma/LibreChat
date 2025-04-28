@@ -1,36 +1,42 @@
 {
   "version": "0.2.0",
-  "configurations": [
+  "compounds": [
     {
-      "name": "Debug LibreChat API",
+      "name": "Fullstack Dev (client + backend)",
+      "configurations": ["Client: Vite Dev", "Backend: Nodemon"]
+    }
+  ],
+  "configurations": [
+
+    {
       "type": "node",
       "request": "launch",
-      "program": "${workspaceFolder}/api/server/index.js",
-      "port": 49152,
-      "skipFiles": [
-        "<node_internals>/**",
-        "${workspaceFolder}/node_modules/**"
-      ],
-      "env": {
-        "NODE_ENV": "development"
-      },
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"]
+      "name": "Backend: Nodemon",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "backend:dev"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Client: Vite Dev",
+      "cwd": "${workspaceFolder}/client",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
     },
     {
       "type": "chrome",
       "request": "launch",
-      "name": "Debug LibreChat Frontend",
+      "name": "Frontend: Chrome Debug",
       "url": "http://localhost:3090",
-      "webRoot": "${workspaceFolder}/client",
-      "sourceMapPathOverrides": {
-        "webpack:///src/*": "${webRoot}/src/*"
-      }
-    }
-  ],
-  "compounds": [
-    {
-      "name": "Debug Full Stack",
-      "configurations": ["Debug LibreChat API", "Debug LibreChat Frontend"]
+      "webRoot": "${workspaceFolder}/client/src",
+      "cwd": "${workspaceFolder}/client",
+      "sourceMaps": true,
+      "trace": true
     }
   ]
 }
