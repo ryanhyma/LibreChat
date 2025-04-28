@@ -11,6 +11,7 @@ import { UserIcon } from '~/components/svg';
 import { useLocalize } from '~/hooks';
 import Settings from './Settings';
 import store from '~/store';
+import MyProfile from './MyProfile'; // Import MyProfile component
 
 function AccountSettings() {
   const localize = useLocalize();
@@ -21,6 +22,7 @@ function AccountSettings() {
   });
   const [showSettings, setShowSettings] = useState(false);
   const [showFiles, setShowFiles] = useRecoilState(store.showFiles);
+  const [showMyProfile, setShowMyProfile] = useState(false); // State for MyProfile dialog
 
   const avatarSrc = useAvatar(user);
   const avatarSeed = user?.avatar || user?.name || user?.username || '';
@@ -111,6 +113,14 @@ function AccountSettings() {
           <GearIcon className="icon-md" aria-hidden="true" />
           {localize('com_nav_settings')}
         </Select.SelectItem>
+        <Select.SelectItem
+          value=""
+          onClick={() => setShowMyProfile(true)} // Open MyProfile dialog
+          className="select-item text-sm"
+        >
+          <UserIcon className="icon-md" aria-hidden="true" />
+          My Profile
+        </Select.SelectItem>
         <DropdownMenuSeparator />
         <Select.SelectItem
           aria-selected={true}
@@ -124,6 +134,7 @@ function AccountSettings() {
       </Select.SelectPopover>
       {showFiles && <FilesView open={showFiles} onOpenChange={setShowFiles} />}
       {showSettings && <Settings open={showSettings} onOpenChange={setShowSettings} />}
+      {showMyProfile && <MyProfile open={showMyProfile} onOpenChange={setShowMyProfile} />} {/* Add MyProfile dialog */}
     </Select.SelectProvider>
   );
 }
