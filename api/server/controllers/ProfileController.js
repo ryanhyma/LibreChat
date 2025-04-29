@@ -4,7 +4,7 @@
 const User = require('~/models/User');
 const Conversation = require('~/models/schema/convoSchema');
 const Message = require('~/models/schema/messageSchema');
-const Transaction = require('~/models/Transaction'); // <-- Add this line
+const { Transaction } = require('~/models/Transaction'); // <-- Correctly import the Mongoose model
 const { logger } = require('~/config');
 
 /**
@@ -23,59 +23,57 @@ const getProfileController = async (req, res) => {
       Message.countDocuments({ user: user._id }),
     ]);
 
-    // --- Aggregate token usage and cost over last 30 days ---
+    // --- Aggregate daily usage (tokens and cost) using correct logic ---
+    // Define 'since' for 30 days ago at midnight
     const since = new Date();
+    since.setHours(0, 0, 0, 0);
     since.setDate(since.getDate() - 30);
 
-    // Daily usage (tokens and cost)
-    const dailyUsage = await Transaction.aggregate([
-      { $match: { user: user._id, createdAt: { $gte: since } } },
-      {
-        $group: {
-          _id: {
-            day: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
-            tokenType: "$tokenType",
-          },
-          totalTokens: { $sum: "$tokenValue" },
-          totalCost: { $sum: "$rawAmount" },
-        },
-      },
-      {
-        $group: {
-          _id: "$_id.day",
-          tokens: {
-            $sum: {
-              $cond: [{ $eq: ["$_id.tokenType", "prompt"] }, "$totalTokens", 0],
-            },
-          },
-          completions: {
-            $sum: {
-              $cond: [{ $eq: ["$_id.tokenType", "completion"] }, "$totalTokens", 0],
-            },
-          },
-          credits: {
-            $sum: {
-              $cond: [{ $eq: ["$_id.tokenType", "credits"] }, "$totalTokens", 0],
-            },
-          },
-          totalCost: { $sum: "$totalCost" },
-        },
-      },
-      { $sort: { _id: 1 } },
-    ]);
+    // --- Aggregate daily usage (tokens and cost) using correct logic ---
+    const transactionsDaily = await Transaction.find({ user: user._id, createdAt: { $gte: since } });
+    const dailyUsageMap = {};
+    for (const tx of transactionsDaily) {
+      const day = tx.createdAt ? tx.createdAt.toISOString().slice(0, 10) : 'unknown';
+      if (!dailyUsageMap[day]) {
+        dailyUsageMap[day] = {
+          inputTokens: 0,
+          outputTokens: 0,
+          totalTokens: 0,
+          totalCost: 0,
+        };
+      }
+      if (tx.tokenType === 'prompt') {
+        dailyUsageMap[day].inputTokens += Math.round(Math.abs(tx.tokenValue || 0));
+      } else if (tx.tokenType === 'completion') {
+        dailyUsageMap[day].outputTokens += Math.round(Math.abs(tx.tokenValue || 0));
+      }
+      dailyUsageMap[day].totalTokens += Math.round(Math.abs(tx.tokenValue || 0));
+      dailyUsageMap[day].totalCost += Math.abs(tx.tokenValue || 0) / 1000000;
+    }
+    const dailyUsage = Object.entries(dailyUsageMap).map(([date, data]) => ({ date, ...data }));
 
-    // Usage by model
-    const usageByModel = await Transaction.aggregate([
-      { $match: { user: user._id, createdAt: { $gte: since } } },
-      {
-        $group: {
-          _id: "$model",
-          tokens: { $sum: "$tokenValue" },
-          cost: { $sum: "$rawAmount" },
-        },
-      },
-      { $sort: { tokens: -1 } },
-    ]);
+    // Usage by model (input, output, total tokens, and cost) using correct logic
+    const transactions = await Transaction.find({ user: user._id, createdAt: { $gte: since } });
+    const usageByModelMap = {};
+    for (const tx of transactions) {
+      const model = tx.model || 'unknown';
+      if (!usageByModelMap[model]) {
+        usageByModelMap[model] = {
+          inputTokens: 0,
+          outputTokens: 0,
+          totalTokens: 0,
+          totalCost: 0,
+        };
+      }
+      if (tx.tokenType === 'prompt') {
+        usageByModelMap[model].inputTokens += Math.round(Math.abs(tx.tokenValue || 0));
+      } else if (tx.tokenType === 'completion') {
+        usageByModelMap[model].outputTokens += Math.round(Math.abs(tx.tokenValue || 0));
+      }
+      usageByModelMap[model].totalTokens += Math.round(Math.abs(tx.tokenValue || 0));
+      usageByModelMap[model].totalCost += Math.abs(tx.tokenValue || 0) / 1000000;
+    }
+    const usageByModel = Object.entries(usageByModelMap).map(([model, data]) => ({ _id: model, ...data }));
 
     res.status(200).json({
       user: {

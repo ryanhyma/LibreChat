@@ -4,6 +4,7 @@ import React from 'react';
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 import type { TDialogProps } from '~/common';
 import { useLocalize } from '~/hooks';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 export default function MyProfile({ open, onOpenChange }: TDialogProps) {
   const localize = useLocalize();
@@ -50,7 +51,6 @@ export default function MyProfile({ open, onOpenChange }: TDialogProps) {
               <div className="border-b border-gray-200 dark:border-gray-700">
                 <nav className="flex space-x-8 px-4">
                   <button className="border-indigo-500 text-indigo-600 dark:text-indigo-400 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium">{localize('usage_statistics', 'Usage Statistics')}</button>
-                  <button className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium">{localize('reset_password', 'Reset Password')}</button>
                 </nav>
               </div>
               <div className="flex-1 overflow-y-auto p-4">
@@ -97,41 +97,48 @@ export default function MyProfile({ open, onOpenChange }: TDialogProps) {
                       </div>
                     </div>
                   </div>
-                  {/* Daily Usage Chart/Table */}
-                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{localize('daily_usage', 'Daily Usage')}</h3>
-                      {/* ...existing chart toggle buttons... */}
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full text-sm">
-                        <thead>
-                          <tr>
-                            <th className="px-2 py-1 text-left">Date</th>
-                            <th className="px-2 py-1 text-left">Prompt Tokens</th>
-                            <th className="px-2 py-1 text-left">Completion Tokens</th>
-                            <th className="px-2 py-1 text-left">Credits</th>
-                            <th className="px-2 py-1 text-left">Cost</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {profile?.usage?.daily?.length > 0 ? (
-                            profile.usage.daily.map((row: any) => (
-                              <tr key={row._id}>
-                                <td className="px-2 py-1">{row._id}</td>
-                                <td className="px-2 py-1">{row.tokens ?? 0}</td>
-                                <td className="px-2 py-1">{row.completions ?? 0}</td>
-                                <td className="px-2 py-1">{row.credits ?? 0}</td>
-                                <td className="px-2 py-1">{row.totalCost?.toFixed(4) ?? 0}</td>
-                              </tr>
-                            ))
-                          ) : (
+                  {/* Daily Usage Table */}
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mt-6">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Daily Token Usage</h3>
+                    <div className="h-64 flex flex-col items-center justify-center bg-white dark:bg-gray-700 rounded-lg overflow-y-auto">
+                      {profile?.usage?.daily?.length ? (
+                        <table className="min-w-full text-xs mb-6">
+                          <thead>
                             <tr>
-                              <td colSpan={5} className="text-center text-gray-400 py-2">No usage data</td>
+                              <th className="px-2 py-1 text-left">Date</th>
+                              <th className="px-2 py-1 text-left">Input Tokens</th>
+                              <th className="px-2 py-1 text-left">Output Tokens</th>
+                              <th className="px-2 py-1 text-left">Total Tokens</th>
+                              <th className="px-2 py-1 text-left">Cost</th>
                             </tr>
-                          )}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {profile.usage.daily.map((d: any) => (
+                              <tr key={d.date}>
+                                <td className="px-2 py-1 text-left">{d.date}</td>
+                                <td className="px-2 py-1 text-left">{d.inputTokens}</td>
+                                <td className="px-2 py-1 text-left">{d.outputTokens}</td>
+                                <td className="px-2 py-1 text-left">{d.totalTokens}</td>
+                                <td className="px-2 py-1 text-left">{d.totalCost?.toFixed(4)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      ) : (
+                        <span className="text-gray-400">No daily usage data</span>
+                      )}
+                      {/* Cost per Day Line Graph */}
+                      {profile?.usage?.daily?.length ? (
+                        <ResponsiveContainer width="100%" height={200}>
+                          <LineChart data={profile.usage.daily} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="date" fontSize={10} angle={-45} textAnchor="end" height={50} />
+                            <YAxis dataKey="totalCost" fontSize={10} width={60} tickFormatter={(v) => `$${v.toFixed(2)}`}/>
+                            <Tooltip formatter={(value: number) => `$${value.toFixed(4)}`} labelFormatter={label => `Date: ${label}`}/>
+                            <Line type="monotone" dataKey="totalCost" stroke="#8884d8" strokeWidth={2} dot={false} name="Cost per Day" />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      ) : null}
                     </div>
                   </div>
                   {/* Usage by Model Table */}
@@ -142,8 +149,10 @@ export default function MyProfile({ open, onOpenChange }: TDialogProps) {
                         <thead>
                           <tr>
                             <th className="px-2 py-1 text-left">Model</th>
-                            <th className="px-2 py-1 text-left">Tokens</th>
-                            <th className="px-2 py-1 text-left">Cost</th>
+                            <th className="px-2 py-1 text-left">Input Tokens</th>
+                            <th className="px-2 py-1 text-left">Output Tokens</th>
+                            <th className="px-2 py-1 text-left">Total Tokens</th>
+                            <th className="px-2 py-1 text-left">Total Cost</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -151,25 +160,19 @@ export default function MyProfile({ open, onOpenChange }: TDialogProps) {
                             profile.usage.byModel.map((row: any) => (
                               <tr key={row._id || 'unknown'}>
                                 <td className="px-2 py-1">{row._id || '-'}</td>
-                                <td className="px-2 py-1">{row.tokens ?? 0}</td>
-                                <td className="px-2 py-1">{row.cost?.toFixed(4) ?? 0}</td>
+                                <td className="px-2 py-1">{row.inputTokens ?? 0}</td>
+                                <td className="px-2 py-1">{row.outputTokens ?? 0}</td>
+                                <td className="px-2 py-1">{row.totalTokens ?? 0}</td>
+                                <td className="px-2 py-1">{row.totalCost?.toFixed(4) ?? 0}</td>
                               </tr>
                             ))
                           ) : (
                             <tr>
-                              <td colSpan={3} className="text-center text-gray-400 py-2">No usage data</td>
+                              <td colSpan={5} className="text-center text-gray-400 py-2">No usage data</td>
                             </tr>
                           )}
                         </tbody>
                       </table>
-                    </div>
-                  </div>
-                  {/* Usage by Model Chart Placeholder */}
-                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{localize('usage_by_model', 'Usage by Model')}</h3>
-                    <div className="h-64 flex items-center justify-center bg-white dark:bg-gray-700 rounded-lg">
-                      {/* Chart placeholder */}
-                      <span className="text-gray-400">[{localize('usage_by_model_chart', 'Usage by Model Chart')}]</span>
                     </div>
                   </div>
                 </div>
