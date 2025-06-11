@@ -76,11 +76,31 @@ const AppService = async (app) => {
     directory: paths.structuredTools,
   });
 
+  let availableToolsCache = { ...availableTools };
+  let lastToolsRefresh = Date.now();
+  const TOOLS_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
   if (config.mcpServers != null) {
     const mcpManager = getMCPManager();
     await mcpManager.initializeMCP(config.mcpServers, processMCPEnv);
-    await mcpManager.mapAvailableTools(availableTools);
+    await mcpManager.mapAvailableTools(availableToolsCache);
+    lastToolsRefresh = Date.now();
   }
+
+  // Dynamic getter for available tools
+  app.locals.getAvailableTools = async function () {
+    const now = Date.now();
+    if (!lastToolsRefresh || (now - lastToolsRefresh > TOOLS_CACHE_DURATION)) {
+      if (config.mcpServers != null) {
+        const mcpManager = getMCPManager();
+        const newTools = { ...availableTools };
+        await mcpManager.mapAvailableTools(newTools);
+        availableToolsCache = newTools;
+        lastToolsRefresh = now;
+      }
+    }
+    return availableToolsCache;
+  };
 
   const socialLogins =
     config?.registration?.socialLogins ?? configDefaults?.registration?.socialLogins;
@@ -96,7 +116,6 @@ const AppService = async (app) => {
     socialLogins,
     filteredTools,
     includedTools,
-    availableTools,
     imageOutputType,
     interfaceConfig,
     turnstileConfig,
