@@ -1,10 +1,12 @@
 // ProfileController.js
 // Aggregates user info and usage stats for profile dialog
 
-const User = require('~/models/User');
-const Conversation = require('~/models/schema/convoSchema');
-const Message = require('~/models/schema/messageSchema');
-const { Transaction } = require('~/models/Transaction'); // <-- Correctly import the Mongoose model
+const {
+  User,
+  Conversation,
+  Message,
+  Transaction,
+} = require('~/db/models');
 const { logger } = require('~/config');
 
 /**
