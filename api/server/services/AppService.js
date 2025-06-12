@@ -97,6 +97,7 @@ const AppService = async (app) => {
         await mcpManager.mapAvailableTools(newTools);
         availableToolsCache = newTools;
         lastToolsRefresh = now;
+        app.locals.availableTools = availableToolsCache;
       }
     }
     return availableToolsCache;
@@ -116,6 +117,7 @@ const AppService = async (app) => {
     socialLogins,
     filteredTools,
     includedTools,
+    availableTools: availableToolsCache,
     imageOutputType,
     interfaceConfig,
     turnstileConfig,
@@ -129,6 +131,7 @@ const AppService = async (app) => {
       ...defaultLocals,
       [EModelEndpoint.agents]: agentsDefaults,
     };
+    app.locals.availableTools = availableToolsCache;
     return;
   }
 
@@ -186,6 +189,7 @@ const AppService = async (app) => {
     modelSpecs: processModelSpecs(endpoints, config.modelSpecs, interfaceConfig),
     ...endpointLocals,
   };
+  app.locals.availableTools = availableToolsCache;
 };
 
 module.exports = AppService;
