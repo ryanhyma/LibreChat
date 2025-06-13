@@ -16,6 +16,7 @@ const search = require('./search');
 const models = require('./models');
 const convos = require('./convos');
 const config = require('./config');
+const mcp = require('./mcp');
 const agents = require('./agents');
 const roles = require('./roles');
 const oauth = require('./oauth');
@@ -54,6 +55,7 @@ module.exports = {
   balance,
   messages,
   memories,
+  mcp,
   endpoints,
   tokenizer,
   assistants,
