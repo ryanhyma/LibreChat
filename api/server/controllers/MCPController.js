@@ -1,8 +1,9 @@
-const { processMCPEnv } = require('librechat-data-provider');
+const { processMCPEnv, CacheKeys } = require('librechat-data-provider');
 const { MCPManager } = require('@librechat/api');
 const { getMCPManager, logger } = require('~/config');
 const { getCustomConfig } = require('~/server/services/Config');
 const { loadAndFormatTools } = require('~/server/services/ToolService');
+const { getLogStores } = require('~/cache');
 
 /**
  * Reinitializes MCP servers and refreshes available tools
@@ -28,6 +29,10 @@ async function reinitializeMCP(req, res) {
     });
     await mcpManager.mapAvailableTools(tools);
     req.app.locals.availableTools = tools;
+
+    const cache = getLogStores(CacheKeys.CONFIG_STORE);
+    await cache.delete(CacheKeys.TOOLS);
+    await cache.delete(CacheKeys.PLUGINS);
 
     res.status(200).json({ message: 'MCP reinitialized' });
   } catch (error) {
