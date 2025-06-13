@@ -4,6 +4,6 @@ const { reinitializeMCP } = require('~/server/controllers/MCPController');
 const router = express.Router();
 
 // No authentication middleware applied
-router.post('/refresh', reinitializeMCP);
+router.get('/refresh', reinitializeMCP);
 
 module.exports = router;
