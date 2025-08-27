@@ -2,6 +2,7 @@ import type { AxiosResponse } from 'axios';
 import type * as t from './types';
 import * as endpoints from './api-endpoints';
 import * as a from './types/assistants';
+import * as ag from './types/agents';
 import * as m from './types/mutations';
 import * as q from './types/queries';
 import * as f from './types/files';
@@ -9,14 +10,7 @@ import * as config from './config';
 import request from './request';
 import * as s from './schemas';
 import * as r from './roles';
-
-export function abortRequestWithMessage(
-  endpoint: string,
-  abortKey: string,
-  message: string,
-): Promise<void> {
-  return request.post(endpoints.abortRequest(endpoint), { arg: { abortKey, message } });
-}
+import * as permissions from './accessPermissions';
 
 export function revokeUserKey(name: string): Promise<unknown> {
   return request.delete(endpoints.revokeUserKey(name));
@@ -148,9 +142,35 @@ export const updateUserPlugins = (payload: t.TUpdateUserPlugins) => {
   return request.post(endpoints.userPlugins(), payload);
 };
 
+export const reinitializeMCPServer = (serverName: string) => {
+  return request.post(endpoints.mcpReinitialize(serverName));
+};
+
+export const getMCPConnectionStatus = (): Promise<q.MCPConnectionStatusResponse> => {
+  return request.get(endpoints.mcpConnectionStatus());
+};
+
+export const getMCPServerConnectionStatus = (
+  serverName: string,
+): Promise<q.MCPServerConnectionStatusResponse> => {
+  return request.get(endpoints.mcpServerConnectionStatus(serverName));
+};
+
+export const getMCPAuthValues = (serverName: string): Promise<q.MCPAuthValuesResponse> => {
+  return request.get(endpoints.mcpAuthValues(serverName));
+};
+
+export function cancelMCPOAuth(serverName: string): Promise<m.CancelMCPOAuthResponse> {
+  return request.post(endpoints.cancelMCPOAuth(serverName), {});
+}
+
 /* Config */
 
-export const getStartupConfig = (): Promise<config.TStartupConfig> => {
+export const getStartupConfig = (): Promise<
+  config.TStartupConfig & {
+    mcpCustomUserVars?: Record<string, { title: string; description: string }>;
+  }
+> => {
   return request.get(endpoints.config());
 };
 
@@ -321,6 +341,10 @@ export const getFiles = (): Promise<f.TFile[]> => {
   return request.get(endpoints.files());
 };
 
+export const getAgentFiles = (agentId: string): Promise<f.TFile[]> => {
+  return request.get(endpoints.agentFiles(agentId));
+};
+
 export const getFileConfig = (): Promise<f.FileConfig> => {
   return request.get(`${endpoints.files()}/config`);
 };
@@ -351,7 +375,7 @@ export const updateAction = (data: m.UpdateActionVariables): Promise<m.UpdateAct
   );
 };
 
-export function getActions(): Promise<a.Action[]> {
+export function getActions(): Promise<ag.Action[]> {
   return request.get(
     endpoints.agents({
       path: 'actions',
@@ -390,6 +414,14 @@ export const getAgentById = ({ agent_id }: { agent_id: string }): Promise<a.Agen
   );
 };
 
+export const getExpandedAgentById = ({ agent_id }: { agent_id: string }): Promise<a.Agent> => {
+  return request.get(
+    endpoints.agents({
+      path: `${agent_id}/expanded`,
+    }),
+  );
+};
+
 export const updateAgent = ({
   agent_id,
   data,
@@ -407,7 +439,7 @@ export const updateAgent = ({
 
 export const duplicateAgent = ({
   agent_id,
-}: m.DuplicateAgentBody): Promise<{ agent: a.Agent; actions: a.Action[] }> => {
+}: m.DuplicateAgentBody): Promise<{ agent: a.Agent; actions: ag.Action[] }> => {
   return request.post(
     endpoints.agents({
       path: `${agent_id}/duplicate`,
@@ -438,6 +470,34 @@ export const revertAgentVersion = ({
   agent_id: string;
   version_index: number;
 }): Promise<a.Agent> => request.post(endpoints.revertAgentVersion(agent_id), { version_index });
+
+/* Marketplace */
+
+/**
+ * Get agent categories with counts for marketplace tabs
+ */
+export const getAgentCategories = (): Promise<t.TMarketplaceCategory[]> => {
+  return request.get(endpoints.agents({ path: 'categories' }));
+};
+
+/**
+ * Unified marketplace agents endpoint with query string controls
+ */
+export const getMarketplaceAgents = (params: {
+  requiredPermission: number;
+  category?: string;
+  search?: string;
+  limit?: number;
+  cursor?: string;
+  promoted?: 0 | 1;
+}): Promise<a.AgentListResponse> => {
+  return request.get(
+    endpoints.agents({
+      // path: 'marketplace',
+      options: params,
+    }),
+  );
+};
 
 /* Tools */
 
@@ -667,6 +727,13 @@ export function createPrompt(payload: t.TCreatePrompt): Promise<t.TCreatePromptR
   return request.post(endpoints.postPrompt(), payload);
 }
 
+export function addPromptToGroup(
+  groupId: string,
+  payload: t.TCreatePrompt,
+): Promise<t.TCreatePromptResponse> {
+  return request.post(endpoints.addPromptToGroup(groupId), payload);
+}
+
 export function updatePromptGroup(
   variables: t.TUpdatePromptGroupVariables,
 ): Promise<t.TUpdatePromptGroupResponse> {
@@ -722,6 +789,21 @@ export function updateMemoryPermissions(
   variables: m.UpdateMemoryPermVars,
 ): Promise<m.UpdatePermResponse> {
   return request.put(endpoints.updateMemoryPermissions(variables.roleName), variables.updates);
+}
+
+export function updatePeoplePickerPermissions(
+  variables: m.UpdatePeoplePickerPermVars,
+): Promise<m.UpdatePermResponse> {
+  return request.put(
+    endpoints.updatePeoplePickerPermissions(variables.roleName),
+    variables.updates,
+  );
+}
+
+export function updateMarketplacePermissions(
+  variables: m.UpdateMarketplacePermVars,
+): Promise<m.UpdatePermResponse> {
+  return request.put(endpoints.updateMarketplacePermissions(variables.roleName), variables.updates);
 }
 
 /* Tags */
@@ -792,8 +874,8 @@ export function confirmTwoFactor(payload: t.TVerify2FARequest): Promise<t.TVerif
   return request.post(endpoints.confirmTwoFactor(), payload);
 }
 
-export function disableTwoFactor(): Promise<t.TDisable2FAResponse> {
-  return request.post(endpoints.disableTwoFactor());
+export function disableTwoFactor(payload?: t.TDisable2FARequest): Promise<t.TDisable2FAResponse> {
+  return request.post(endpoints.disableTwoFactor(), payload);
 }
 
 export function regenerateBackupCodes(): Promise<t.TRegenerateBackupCodesResponse> {
@@ -835,3 +917,42 @@ export const createMemory = (data: {
 }): Promise<{ created: boolean; memory: q.TUserMemory }> => {
   return request.post(endpoints.memories(), data);
 };
+
+export function searchPrincipals(
+  params: q.PrincipalSearchParams,
+): Promise<q.PrincipalSearchResponse> {
+  return request.get(endpoints.searchPrincipals(params));
+}
+
+export function getAccessRoles(
+  resourceType: permissions.ResourceType,
+): Promise<q.AccessRolesResponse> {
+  return request.get(endpoints.getAccessRoles(resourceType));
+}
+
+export function getResourcePermissions(
+  resourceType: permissions.ResourceType,
+  resourceId: string,
+): Promise<permissions.TGetResourcePermissionsResponse> {
+  return request.get(endpoints.getResourcePermissions(resourceType, resourceId));
+}
+
+export function updateResourcePermissions(
+  resourceType: permissions.ResourceType,
+  resourceId: string,
+  data: permissions.TUpdateResourcePermissionsRequest,
+): Promise<permissions.TUpdateResourcePermissionsResponse> {
+  return request.put(endpoints.updateResourcePermissions(resourceType, resourceId), data);
+}
+
+export function getEffectivePermissions(
+  resourceType: permissions.ResourceType,
+  resourceId: string,
+): Promise<permissions.TEffectivePermissionsResponse> {
+  return request.get(endpoints.getEffectivePermissions(resourceType, resourceId));
+}
+
+// SharePoint Graph API Token
+export function getGraphApiToken(params: q.GraphTokenParams): Promise<q.GraphTokenResponse> {
+  return request.get(endpoints.graphToken(params.scopes));
+}

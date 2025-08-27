@@ -1,20 +1,23 @@
 const {
+  isEnabled,
+  loadMemoryConfig,
+  agentsConfigSetup,
+  loadWebSearchConfig,
+} = require('@librechat/api');
+const {
   FileSources,
   loadOCRConfig,
-  processMCPEnv,
   EModelEndpoint,
-  loadMemoryConfig,
   getConfigDefaults,
-  loadWebSearchConfig,
 } = require('librechat-data-provider');
-const { agentsConfigSetup } = require('@librechat/api');
 const {
+  checkWebSearchConfig,
+  checkAzureVariables,
+  checkVariables,
   checkHealth,
   checkConfig,
-  checkVariables,
-  checkAzureVariables,
-  checkWebSearchConfig,
 } = require('./start/checks');
+const { ensureDefaultCategories, seedDefaultRoles, initializeRoles } = require('~/models');
 const { azureAssistantsDefaults, assistantsConfigSetup } = require('./start/assistants');
 const { initializeAzureBlobService } = require('./Files/Azure/initialize');
 const { initializeFirebase } = require('./Files/Firebase/initialize');
@@ -26,9 +29,7 @@ const { azureConfigSetup } = require('./start/azureOpenAI');
 const { processModelSpecs } = require('./start/modelSpecs');
 const { initializeS3 } = require('./Files/S3/initialize');
 const { loadAndFormatTools } = require('./ToolService');
-const { isEnabled } = require('~/server/utils');
-const { initializeRoles } = require('~/models');
-const { getMCPManager } = require('~/config');
+const { setCachedTools } = require('./Config');
 const paths = require('~/config/paths');
 
 /**
@@ -38,6 +39,8 @@ const paths = require('~/config/paths');
  */
 const AppService = async (app) => {
   await initializeRoles();
+  await seedDefaultRoles();
+  await ensureDefaultCategories();
   /** @type {TCustomConfig} */
   const config = (await loadCustomConfig()) ?? {};
   const configDefaults = getConfigDefaults();
@@ -80,28 +83,10 @@ const AppService = async (app) => {
   let lastToolsRefresh = Date.now();
   const TOOLS_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-  if (config.mcpServers != null) {
-    const mcpManager = getMCPManager();
-    await mcpManager.initializeMCP(config.mcpServers, processMCPEnv);
-    await mcpManager.mapAvailableTools(availableToolsCache);
-    lastToolsRefresh = Date.now();
-  }
+  await setCachedTools(availableTools, { isGlobal: true });
 
-  // Dynamic getter for available tools
-  app.locals.getAvailableTools = async function () {
-    const now = Date.now();
-    if (!lastToolsRefresh || (now - lastToolsRefresh > TOOLS_CACHE_DURATION)) {
-      if (config.mcpServers != null) {
-        const mcpManager = getMCPManager();
-        const newTools = { ...availableTools };
-        await mcpManager.mapAvailableTools(newTools);
-        availableToolsCache = newTools;
-        lastToolsRefresh = now;
-        app.locals.availableTools = availableToolsCache;
-      }
-    }
-    return availableToolsCache;
-  };
+  // Store MCP config for later initialization
+  const mcpConfig = config.mcpServers || null;
 
   const socialLogins =
     config?.registration?.socialLogins ?? configDefaults?.registration?.socialLogins;
@@ -109,6 +94,7 @@ const AppService = async (app) => {
   const turnstileConfig = loadTurnstileConfig(config, configDefaults);
 
   const defaultLocals = {
+    config,
     ocr,
     paths,
     memory,
@@ -117,11 +103,11 @@ const AppService = async (app) => {
     socialLogins,
     filteredTools,
     includedTools,
-    availableTools: availableToolsCache,
     imageOutputType,
     interfaceConfig,
     turnstileConfig,
     balance,
+    mcpConfig,
   };
 
   const agentsDefaults = agentsConfigSetup(config);
@@ -181,6 +167,10 @@ const AppService = async (app) => {
       endpointLocals[key] = endpoints[key];
     }
   });
+
+  if (endpoints?.all) {
+    endpointLocals.all = endpoints.all;
+  }
 
   app.locals = {
     ...defaultLocals,

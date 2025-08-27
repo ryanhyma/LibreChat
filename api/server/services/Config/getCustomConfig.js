@@ -1,5 +1,6 @@
+const { isEnabled } = require('@librechat/api');
 const { CacheKeys, EModelEndpoint } = require('librechat-data-provider');
-const { normalizeEndpointName, isEnabled } = require('~/server/utils');
+const { normalizeEndpointName } = require('~/server/utils');
 const loadCustomConfig = require('./loadCustomConfig');
 const getLogStores = require('~/cache/getLogStores');
 
@@ -9,8 +10,8 @@ const getLogStores = require('~/cache/getLogStores');
  * @returns {Promise<TCustomConfig | null>}
  * */
 async function getCustomConfig() {
-  const cache = getLogStores(CacheKeys.CONFIG_STORE);
-  return (await cache.get(CacheKeys.CUSTOM_CONFIG)) || (await loadCustomConfig());
+  const cache = getLogStores(CacheKeys.STATIC_CONFIG);
+  return (await cache.get(CacheKeys.LIBRECHAT_YAML_CONFIG)) || (await loadCustomConfig());
 }
 
 /**
@@ -36,6 +37,7 @@ async function getBalanceConfig() {
 /**
  *
  * @param {string | EModelEndpoint} endpoint
+ * @returns {Promise<TEndpoint | undefined>}
  */
 const getCustomEndpointConfig = async (endpoint) => {
   const customConfig = await getCustomConfig();
@@ -50,4 +52,18 @@ const getCustomEndpointConfig = async (endpoint) => {
   );
 };
 
-module.exports = { getCustomConfig, getBalanceConfig, getCustomEndpointConfig };
+/**
+ * @returns {Promise<boolean>}
+ */
+async function hasCustomUserVars() {
+  const customConfig = await getCustomConfig();
+  const mcpServers = customConfig?.mcpServers;
+  return Object.values(mcpServers ?? {}).some((server) => server.customUserVars);
+}
+
+module.exports = {
+  getCustomConfig,
+  getBalanceConfig,
+  hasCustomUserVars,
+  getCustomEndpointConfig,
+};

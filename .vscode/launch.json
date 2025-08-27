@@ -11,20 +11,13 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Backend: Nodemon",
-      "cwd": "${workspaceFolder}",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "backend:dev"],
-      "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen"
-    },
-    {
-      "type": "node",
-      "request": "launch",
-      "name": "Client: Vite Dev",
-      "cwd": "${workspaceFolder}/client",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "name": "Launch LibreChat (debug)",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/api/server/index.js",
+      "env": {
+        "NODE_ENV": "production",
+        "NODE_TLS_REJECT_UNAUTHORIZED": "0"
+      },
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen"
     },
