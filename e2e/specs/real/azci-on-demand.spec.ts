@@ -23,7 +23,7 @@ type AgentSummary = { id: string; name: string };
 async function selectAgentForChat(page: Page, agentName: string) {
   const form = await openAgentBuilder(page);
   await form.getByRole('combobox', { name: 'Agent', exact: true }).click();
-  await page.getByRole('option', { name: agentName }).click();
+  await page.getByRole('option', { name: agentName, exact: true }).click();
   await expect(form.getByLabel('Agent name')).toHaveValue(agentName);
   await form.getByRole('button', { name: 'Select Agent' }).click();
   await expect(page.getByRole('textbox', { name: 'Message input' })).toBeVisible();
@@ -37,6 +37,11 @@ test.describe('azureci on-demand files (real provider)', () => {
     await page.context().clearCookies();
     await page.goto('/login');
     const loginForm = page.getByRole('form', { name: 'Login form' });
+    const composer = page.getByRole('textbox', { name: 'Message input' });
+    await Promise.race([
+      loginForm.waitFor({ state: 'visible', timeout: 15000 }).catch(() => undefined),
+      composer.waitFor({ state: 'visible', timeout: 15000 }).catch(() => undefined),
+    ]);
     if (await loginForm.isVisible().catch(() => false)) {
       await page.getByLabel('Email').fill(USER_EMAIL);
       await page.getByLabel('Password').fill(USER_PASSWORD);
