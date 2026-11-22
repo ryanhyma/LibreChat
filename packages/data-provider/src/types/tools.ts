@@ -24,6 +24,8 @@ export enum EToolResources {
   image_edit = 'image_edit',
   context = 'context',
   ocr = 'ocr',
+  /** Shared file pool for MCP tools; not injected into model context. */
+  mcp = 'mcp',
 }
 
 export type Tool = {

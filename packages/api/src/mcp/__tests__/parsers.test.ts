@@ -2112,4 +2112,39 @@ describe('isRenderableUiResource media types', () => {
       text: '<p>read document</p>',
     });
   });
+
+  describe('generic MCP file artifacts (structuredContent.artifacts)', () => {
+    it('forwards base64 bytes as code-artifact files with the authoring opt-in', () => {
+      const csv = Buffer.from('a,b\n1,2\n').toString('base64');
+      const result: t.MCPToolCallResponse = {
+        content: [{ type: 'text', text: 'generated out.csv' }],
+        structuredContent: {
+          artifacts: [{ name: 'out.csv', bytes: csv, mimeType: 'text/csv' }],
+        },
+      };
+
+      const [, artifacts] = formatToolContent(result, 'openai');
+
+      expect(artifacts?.__librechat_file_authoring).toBe(true);
+      expect(artifacts?.files).toHaveLength(1);
+      expect(artifacts?.files?.[0]).toMatchObject({ id: 'out.csv', name: 'out.csv' });
+      expect(artifacts?.files?.[0]?.preparedBuffer?.toString()).toBe('a,b\n1,2\n');
+    });
+
+    it('returns no authoring opt-in for an empty or malformed list', () => {
+      const empty: t.MCPToolCallResponse = {
+        content: [{ type: 'text', text: 'nothing' }],
+        structuredContent: { artifacts: [] },
+      };
+      const [, a1] = formatToolContent(empty, 'openai');
+      expect(a1?.__librechat_file_authoring).toBeUndefined();
+
+      const bad: t.MCPToolCallResponse = {
+        content: [{ type: 'text', text: 'nothing' }],
+        structuredContent: { artifacts: [{ name: 42, bytes: 'abcd' }] },
+      };
+      const [, a2] = formatToolContent(bad, 'openai');
+      expect(a2?.__librechat_file_authoring).toBeUndefined();
+    });
+  });
 });

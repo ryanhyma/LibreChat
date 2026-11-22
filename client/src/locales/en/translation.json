@@ -4068,5 +4068,9 @@
   "com_ui_slack_apps_redirect": "OAuth redirect URL",
   "com_ui_slack_apps_events": "Events URL",
   "com_ui_slack_apps_interactions": "Interactivity URL",
-  "com_ui_slack_apps_empty": "No Slack apps yet. Create an app in Slack, then add its credentials here to connect agents to your workspace."
+  "com_ui_slack_apps_empty": "No Slack apps yet. Create an app in Slack, then add its credentials here to connect agents to your workspace.",
+  "com_agents_mcp_files_label": "MCP files",
+  "com_agents_mcp_files_description": "Files added once here are available to every MCP tool in the sandbox. They are not injected into the model context.",
+  "com_agents_mcp_files_disabled": "Uploads are disabled for this endpoint.",
+  "com_ui_upload_mcp_files": "Upload MCP files"
 }

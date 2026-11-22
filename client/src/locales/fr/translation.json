@@ -1491,5 +1491,9 @@
   "com_ui_zoom_level": "Niveau de zoom",
   "com_ui_zoom_out": "Dézoomer",
   "com_user_message": "Vous",
-  "com_ui_feedback_tag_other_issue": "Autre"
+  "com_ui_feedback_tag_other_issue": "Autre",
+  "com_agents_mcp_files_label": "Fichiers MCP",
+  "com_agents_mcp_files_description": "Les fichiers ajoutés ici sont disponibles pour tous les outils MCP dans le bac à sable. Ils ne sont pas injectés dans le contexte du modèle.",
+  "com_agents_mcp_files_disabled": "Les téléversements sont désactivés pour ce point de terminaison.",
+  "com_ui_upload_mcp_files": "Téléverser des fichiers MCP"
 }

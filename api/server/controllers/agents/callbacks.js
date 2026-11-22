@@ -1038,7 +1038,11 @@ function createToolEndCallback({ req, res, artifactPromises, streamId = null, jo
           }),
         );
       }
-      return;
+      /** A tool that returns images AND files must deliver both: only stop here when
+       *  there is no code-artifact file list to fall through to. */
+      if (!isCodeArtifactToolOutput(output) || !output.artifact.files) {
+        return;
+      }
     }
 
     if (!isCodeArtifactToolOutput(output)) {

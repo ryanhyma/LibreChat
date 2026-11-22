@@ -317,6 +317,34 @@ export function isRenderableUiResource(item: t.ToolContentPart): boolean {
 }
 
 /**
+ * Generic MCP artifact contract: any MCP tool may return `structuredContent.artifacts[]`
+ * (`{ name, bytes(base64) }`), which becomes a native LibreChat attachment through the
+ * code-output pipeline. The `__librechat_file_authoring` opt-in routes the result through
+ * `isCodeArtifactToolOutput` in `packages/api/src/agents/tools.ts`.
+ */
+function extractMCPFileArtifacts(result: t.MCPToolCallResponse):
+  | Array<{ id: string; name: string; preparedBuffer: Buffer }>
+  | undefined {
+  const list = (result?.structuredContent as { artifacts?: unknown } | undefined)?.artifacts;
+  if (!Array.isArray(list) || list.length === 0) {
+    return undefined;
+  }
+  const files: Array<{ id: string; name: string; preparedBuffer: Buffer }> = [];
+  for (const item of list) {
+    const entry = item as { name?: unknown; bytes?: unknown };
+    if (typeof entry.name !== 'string' || !entry.name || typeof entry.bytes !== 'string') {
+      continue;
+    }
+    const buffer = Buffer.from(entry.bytes, 'base64');
+    if (buffer.length === 0) {
+      continue;
+    }
+    files.push({ id: entry.name, name: entry.name, preparedBuffer: buffer });
+  }
+  return files.length ? files : undefined;
+}
+
+/**
  * Converts MCPToolCallResponse content into a plain-text string plus optional artifacts
  * (images, UI resources). All providers receive string content; images are separated into
  * artifacts and merged back by the agents package via formatArtifactPayload / formatAnthropicArtifactContent.
@@ -591,6 +619,15 @@ UI Resource Markers Available:
     artifacts = {
       ...artifacts,
       [Tools.ui_resources]: { data: uiResources },
+    };
+  }
+
+  const mcpFiles = extractMCPFileArtifacts(result);
+  if (mcpFiles) {
+    artifacts = {
+      ...artifacts,
+      __librechat_file_authoring: true,
+      files: mcpFiles,
     };
   }
 

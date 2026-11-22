@@ -13,7 +13,7 @@ interface Props {
 }
 
 export default function ItemDialogBody({ item, agentId, onClose }: Props) {
-  const { contextFiles, knowledgeFiles, codeFiles } = useAgentFileEntries();
+  const { contextFiles, knowledgeFiles, codeFiles, mcpFiles } = useAgentFileEntries();
 
   if (item.kind === 'builtin') {
     return (
@@ -34,7 +34,7 @@ export default function ItemDialogBody({ item, agentId, onClose }: Props) {
     return <SkillSection item={item} />;
   }
   if (item.kind === 'mcp') {
-    return <McpSection item={item} />;
+    return <McpSection item={item} agentId={agentId} mcpFiles={mcpFiles} />;
   }
   return <ActionSection item={item} agentId={agentId} onClose={onClose} />;
 }

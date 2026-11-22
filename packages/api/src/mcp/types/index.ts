@@ -159,9 +159,10 @@ export type Artifacts =
         fileCitations?: boolean;
       };
       [Tools.web_search]?: SearchResultData;
-      files?: Array<{ id: string; name: string }>;
+      files?: Array<{ id: string; name: string; preparedBuffer?: Buffer }>;
       session_id?: string;
       file_ids?: string[];
+      __librechat_file_authoring?: boolean;
     }
   | undefined;
 

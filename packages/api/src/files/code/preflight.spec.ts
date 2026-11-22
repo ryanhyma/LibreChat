@@ -64,6 +64,29 @@ describe('preflightCodeOutputBatch', () => {
     expect(result.every((entry) => entry.downloadFallback !== true)).toBe(true);
   });
 
+  it('uses a caller-supplied preparedBuffer without a Code API download', async () => {
+    const prepare = jest.fn(async (input: PrepareCodeOutputInput) => prepared(input));
+    const art = artifact(1);
+    (art.files[0] as { preparedBuffer?: Buffer }).preparedBuffer = Buffer.from('preset-bytes');
+
+    const result = await preflightCodeOutputBatch({ artifact: art, limits, prepare });
+
+    expect(prepare).not.toHaveBeenCalled();
+    expect(result[0].preparedBuffer?.toString()).toBe('preset-bytes');
+    expect(result[0].downloadFallback).not.toBe(true);
+  });
+
+  it('falls back when a caller-supplied buffer exceeds the transport budget', async () => {
+    const prepare = jest.fn(async (input: PrepareCodeOutputInput) => prepared(input));
+    const art = artifact(1);
+    (art.files[0] as { preparedBuffer?: Buffer }).preparedBuffer = Buffer.alloc(64);
+
+    const result = await preflightCodeOutputBatch({ artifact: art, limits, prepare });
+
+    expect(prepare).not.toHaveBeenCalled();
+    expect(result[0].downloadFallback).toBe(true);
+  });
+
   it('treats zero byte limits as unlimited within the hard transport ceiling', async () => {
     const prepare = jest.fn(async (input: PrepareCodeOutputInput) =>
       prepared(input, { buffer: Buffer.alloc(4) }),

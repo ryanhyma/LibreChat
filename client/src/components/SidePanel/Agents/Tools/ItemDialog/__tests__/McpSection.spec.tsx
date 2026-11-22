@@ -34,6 +34,16 @@ jest.mock('~/hooks/MCP/useMCPRefresh', () => ({
   useMCPRefresh: (options: { enabled: boolean; tools?: boolean }) => mockMCPRefresh(options),
 }));
 
+const mockFormAgentId = jest.fn((): string | undefined => 'agent-from-form');
+const mockFormAgent = jest.fn((): { id?: string } | undefined => undefined);
+
+jest.mock('../../../McpFiles', () => ({
+  __esModule: true,
+  default: ({ agent_id }: { agent_id: string }) => (
+    <div data-testid="mcp-files-pool">pool:{agent_id}</div>
+  ),
+}));
+
 jest.mock('react-hook-form', () => ({
   useFormContext: () => ({ control: {}, setValue: mockSetValue, getValues: mockGetValues }),
   useWatch: ({ name }: { name: string }) => {
@@ -42,6 +52,12 @@ jest.mock('react-hook-form', () => ({
     }
     if (name === 'execute_code') {
       return mockCodeInterpreterSelected();
+    }
+    if (name === 'id') {
+      return mockFormAgentId();
+    }
+    if (name === 'agent') {
+      return mockFormAgent();
     }
     return mockGetValues();
   },
@@ -841,5 +857,31 @@ describe('McpSection', () => {
     };
     render(<McpSection item={empty} />);
     expect(screen.getByText('com_ui_tools_mcp_runtime_tools')).toBeInTheDocument();
+  });
+
+  describe('MCP file pool', () => {
+    it('renders the shared file pool with the agent id prop', () => {
+      render(<McpSection item={item} agentId="agent-prop" mcpFiles={[]} />);
+      expect(screen.getByRole('heading', { name: 'com_agents_mcp_files_label' })).toBeInTheDocument();
+      expect(screen.getByTestId('mcp-files-pool')).toHaveTextContent('pool:agent-prop');
+    });
+
+    it('falls back to the form id when the prop is absent', () => {
+      mockFormAgentId.mockReturnValue('agent-from-form');
+      render(<McpSection item={item} />);
+      expect(screen.getByTestId('mcp-files-pool')).toHaveTextContent('pool:agent-from-form');
+    });
+
+    it('falls back to the agent object id and hides when no id exists', () => {
+      mockFormAgentId.mockReturnValue(undefined);
+      mockFormAgent.mockReturnValue({ id: 'agent-from-object' });
+      const { unmount } = render(<McpSection item={item} />);
+      expect(screen.getByTestId('mcp-files-pool')).toHaveTextContent('pool:agent-from-object');
+      unmount();
+
+      mockFormAgent.mockReturnValue(undefined);
+      render(<McpSection item={item} />);
+      expect(screen.queryByRole('heading', { name: 'com_agents_mcp_files_label' })).toBeNull();
+    });
   });
 });

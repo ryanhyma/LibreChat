@@ -20,6 +20,7 @@ export type TAgentOption = OptionWithIcon &
     knowledge_files?: Array<[string, ExtendedFile]>;
     context_files?: Array<[string, ExtendedFile]>;
     code_files?: Array<[string, ExtendedFile]>;
+    mcp_files?: Array<[string, ExtendedFile]>;
     _id?: string;
   };
 

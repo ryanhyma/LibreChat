@@ -34,6 +34,8 @@ import OptionToggle from '../../../OptionToggle';
 import MCPToolItem from '../../../MCPToolItem';
 import { Collapse } from '~/components/ui';
 import { useLocalize } from '~/hooks';
+import type { ExtendedFile } from '~/common';
+import McpFiles from '../../../McpFiles';
 import { cn } from '~/utils';
 
 interface StatusDisplay {
@@ -63,11 +65,18 @@ function getStatusDisplay(
 
 interface Props {
   item: McpItem;
+  agentId?: string;
+  /** Files added once to the shared MCP pool; not injected into model context. */
+  mcpFiles?: Array<[string, ExtendedFile]>;
 }
 
-export default function McpSection({ item }: Props) {
+export default function McpSection({ item, agentId, mcpFiles }: Props) {
   const localize = useLocalize();
   const { control, getValues, setValue } = useFormContext<AgentForm>();
+  /** The dialog may be rendered without the prop; the form always carries the agent id. */
+  const formAgentId = useWatch({ control, name: 'id' });
+  const formAgent = useWatch({ control, name: 'agent' });
+  const filesAgentId = agentId || formAgentId || formAgent?.id;
   const {
     getServerStatusIconProps,
     getConfigDialogProps,
@@ -447,6 +456,17 @@ export default function McpSection({ item }: Props) {
 
   return (
     <div className="flex flex-col gap-5">
+      {filesAgentId ? (
+        <section aria-labelledby="mcp-files-heading" className="flex flex-col gap-2">
+          <h3 id="mcp-files-heading" className="text-text-primary text-sm font-medium">
+            {localize('com_agents_mcp_files_label')}
+          </h3>
+          <p className="text-text-secondary text-xs">
+            {localize('com_agents_mcp_files_description')}
+          </p>
+          <McpFiles agent_id={filesAgentId} files={mcpFiles} showHeader={false} />
+        </section>
+      ) : null}
       {item.description && (
         <p className="text-text-secondary max-h-40 overflow-y-auto text-sm leading-relaxed whitespace-pre-wrap">
           {item.description}

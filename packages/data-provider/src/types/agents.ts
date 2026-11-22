@@ -972,6 +972,8 @@ export interface AgentToolResources {
   [EToolResources.execute_code]?: ExecuteCodeResource;
   [EToolResources.file_search]?: AgentFileResource;
   [EToolResources.context]?: AgentBaseResource;
+  /** Files added once for MCP tools; never injected into the prompt. */
+  [EToolResources.mcp]?: AgentBaseResource;
   /** @deprecated Use context instead */
   [EToolResources.ocr]?: AgentBaseResource;
 }

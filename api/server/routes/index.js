@@ -37,6 +37,7 @@ const channels = require('./channels');
 const roles = require('./roles');
 const oauth = require('./oauth');
 const files = require('./files');
+const azci = require('./azci');
 const share = require('./share');
 const tags = require('./tags');
 const auth = require('./auth');
@@ -70,6 +71,7 @@ module.exports = {
   roles,
   oauth,
   files,
+  azci,
   share,
   banner,
   openapi,

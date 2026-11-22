@@ -84,6 +84,9 @@ export const processAgentOption = ({
     code_files: _agent?.tool_resources?.execute_code?.file_ids
       ? ([] as Array<[string, ExtendedFile]>)
       : undefined,
+    mcp_files: _agent?.tool_resources?.mcp?.file_ids
+      ? ([] as Array<[string, ExtendedFile]>)
+      : undefined,
   };
 
   if (!fileMap) {
@@ -161,6 +164,12 @@ export const processAgentOption = ({
   if (agent.code_files && _agent?.tool_resources?.execute_code?.file_ids) {
     _agent.tool_resources.execute_code.file_ids.forEach((file_id) =>
       handleFile({ file_id, list: agent.code_files, tool_resource: EToolResources.execute_code }),
+    );
+  }
+
+  if (agent.mcp_files && _agent?.tool_resources?.mcp?.file_ids) {
+    _agent.tool_resources.mcp.file_ids.forEach((file_id) =>
+      handleFile({ file_id, list: agent.mcp_files, tool_resource: EToolResources.mcp }),
     );
   }
 

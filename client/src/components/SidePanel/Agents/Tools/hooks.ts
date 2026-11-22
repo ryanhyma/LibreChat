@@ -86,6 +86,7 @@ export interface AgentFileEntries {
   contextFiles: Array<[string, ExtendedFile]>;
   knowledgeFiles: Array<[string, ExtendedFile]>;
   codeFiles: Array<[string, ExtendedFile]>;
+  mcpFiles: Array<[string, ExtendedFile]>;
 }
 
 const NO_FILES: Array<[string, ExtendedFile]> = [];
@@ -109,7 +110,7 @@ export function useAgentFileEntries(): AgentFileEntries {
 
   return useMemo(() => {
     if (agent == null || agent.id !== agentId) {
-      return { contextFiles: NO_FILES, knowledgeFiles: NO_FILES, codeFiles: NO_FILES };
+      return { contextFiles: NO_FILES, knowledgeFiles: NO_FILES, codeFiles: NO_FILES, mcpFiles: NO_FILES };
     }
     const needsHydration =
       agent.context_files == null || agent.knowledge_files == null || agent.code_files == null;
@@ -127,6 +128,7 @@ export function useAgentFileEntries(): AgentFileEntries {
       contextFiles: agent.context_files ?? processed?.context_files ?? NO_FILES,
       knowledgeFiles: agent.knowledge_files ?? processed?.knowledge_files ?? NO_FILES,
       codeFiles: agent.code_files ?? processed?.code_files ?? NO_FILES,
+      mcpFiles: agent.mcp_files ?? processed?.mcp_files ?? NO_FILES,
     };
   }, [agent, agentId, fileMap, agentFiles]);
 }

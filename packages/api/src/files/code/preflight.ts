@@ -183,6 +183,21 @@ export async function preflightCodeOutputBatch(
 
     let prepared: PreparedCodeOutput;
     try {
+      // A caller (e.g. an MCP artifact bridge) may have already fetched the bytes and
+      // attached them as `preparedBuffer`; honour that instead of a Code API download.
+      const preset = (entry.file as { preparedBuffer?: Buffer }).preparedBuffer;
+      if (preset && preset.length > 0) {
+        if (preset.length > transportBytes) {
+          if (inspectionActive) {
+            throw new UninspectableFileError(resourceField);
+          }
+          entries[index] = { ...entry, downloadFallback: true };
+          continue;
+        }
+        inspectedBytes += preset.length;
+        entries[index] = { ...entry, preparedBuffer: preset };
+        continue;
+      }
       prepared = await input.prepare({
         file: entry.file,
         sessionId: entry.sessionId,
